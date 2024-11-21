@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Demo Shop</title>
+    <!-- Analytics Script -->
+    <script>
+      // Simple Analytics Script
+      window.analyticsTracker = {
+        // Initialize tracker
+        init: function () {
+          this.sessionId = this.generateId();
+          this.trackPageView();
+        },
+
+        // Generate unique ID
+        generateId: function () {
+          return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+            /[xy]/g,
+            function (c) {
+              const r = (Math.random() * 16) | 0;
+              return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+            }
+          );
+        },
+
+        // Track page views
+        trackPageView: function () {
+          this.sendEvent("pageview", {
+            url: window.location.href,
+            title: document.title,
+          });
+        },
+
+        // Track product views
+        trackProductView: function (product) {
+          this.sendEvent("product_view", product);
+        },
+
+        // Track purchases
+        trackPurchase: function (purchase) {
+          this.sendEvent("purchase", purchase);
+        },
+
+        // Send event to server
+        sendEvent: function (eventType, data) {
+          fetch("http://localhost:3000/track", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventType: eventType,
+              sessionId: this.sessionId,
+              timestamp: new Date().toISOString(),
+              data: data,
+            }),
+          });
+        },
+      };
+
+      // Initialize tracker
+      analyticsTracker.init();
+    </script>
+  </head>
+  <body>
+    <div id="shop">
+      <h1>Demo Shop</h1>
+
+      <!-- Product List -->
+      <div class="products">
+        <div class="product">
+          <h2>Gaming Laptop</h2>
+          <p>$999.99</p>
+          <button onclick="viewProduct(1)">View Details</button>
+          <button onclick="purchase(1)">Buy Now</button>
+        </div>
+        <div class="product">
+          <h2>Wireless Mouse</h2>
+          <p>$49.99</p>
+          <button onclick="viewProduct(2)">View Details</button>
+          <button onclick="purchase(2)">Buy Now</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Product data
+      const products = {
+        1: {
+          id: "LAPTOP01",
+          name: "Gaming Laptop",
+          price: 999.99,
+          category: "Electronics",
+        },
+        2: {
+          id: "MOUSE01",
+          name: "Wireless Mouse",
+          price: 49.99,
+          category: "Accessories",
+        },
+      };
+
+      // Track product view
+      function viewProduct(id) {
+        const product = products[id];
+        analyticsTracker.trackProductView(product);
+        alert("Viewing: " + product.name);
+      }
+
+      // Track purchase
+      function purchase(id) {
+        const product = products[id];
+        analyticsTracker.trackPurchase({
+          orderId: "ORDER" + Date.now(),
+          product: product,
+          revenue: product.price,
+        });
+        alert("Purchased: " + product.name);
+      }
+    </script>
+  </body>
+</html>

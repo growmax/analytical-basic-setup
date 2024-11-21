@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Shop - Analytics Demo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .product {
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 8px;
+        transition: transform 0.2s;
+      }
+
+      .product:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .price {
+        font-size: 1.25rem;
+        color: #2c5282;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+
+      .btn {
+        background: #4299e1;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      #debug-panel {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 12px;
+        max-width: 400px;
+        max-height: 300px;
+        overflow: auto;
+        z-index: 1000;
+      }
+
+      #debug-panel pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="product-grid">
+      <div class="product" id="product1">
+        <img
+          src="https://via.placeholder.com/300x200"
+          alt="Wireless Headphones"
+        />
+        <h3>Wireless Headphones</h3>
+        <div class="price">$99.99</div>
+        <button class="btn">Add to Cart</button>
+      </div>
+
+      <div class="product" id="product2">
+        <img src="https://via.placeholder.com/300x200" alt="Smart Watch" />
+        <h3>Smart Watch</h3>
+        <div class="price">$199.99</div>
+        <button class="btn">Add to Cart</button>
+      </div>
+
+      <div class="product" id="product3">
+        <img
+          src="https://via.placeholder.com/300x200"
+          alt="Bluetooth Speaker"
+        />
+        <h3>Bluetooth Speaker</h3>
+        <div class="price">$79.99</div>
+        <button class="btn">Add to Cart</button>
+      </div>
+    </div>
+
+    <div id="debug-panel">
+      <h4>Analytics Debug Panel</h4>
+      <div id="debug-content"></div>
+    </div>
+
+    <script>
+      class BehaviorTracker {
+        constructor() {
+          // Initialize tracking data
+          this.sessionId = this.generateId();
+          this.movements = [];
+          this.clicks = [];
+          this.hovers = [];
+          this.scrollDepths = [];
+          this.viewportHeight = window.innerHeight;
+          this.pageHeight = Math.max(
+            document.body.scrollHeight,
+            document.body.offsetHeight
+          );
+
+          // Start tracking
+          this.init();
+        }
+
+        generateId() {
+          return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+            /[xy]/g,
+            (c) => {
+              const r = (Math.random() * 16) | 0;
+              return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+            }
+          );
+        }
+
+        init() {
+          this.detectProducts();
+          this.setupEventListeners();
+        }
+
+        setupEventListeners() {
+          // Mouse movement
+          document.addEventListener(
+            "mousemove",
+            this.handleMouseMove.bind(this)
+          );
+
+          // Clicks
+          document.addEventListener("click", this.handleClick.bind(this));
+
+          // Scroll
+          window.addEventListener("scroll", this.handleScroll.bind(this));
+
+          // Product interactions
+          document.querySelectorAll(".product").forEach((product) => {
+            product.addEventListener("mouseenter", () =>
+              this.handleProductHover(product, true)
+            );
+            product.addEventListener("mouseleave", () =>
+              this.handleProductHover(product, false)
+            );
+          });
+
+          // Page exit
+          window.addEventListener(
+            "beforeunload",
+            this.handlePageExit.bind(this)
+          );
+        }
+
+        handleMouseMove(event) {
+          this.movements.push({
+            x: event.pageX,
+            y: event.pageY,
+            timestamp: Date.now(),
+          });
+
+          // Limit stored movements
+          if (this.movements.length > 100) {
+            this.movements.shift();
+          }
+        }
+
+        handleClick(event) {
+          const clickData = {
+            x: event.pageX,
+            y: event.pageY,
+            element: this.getElementData(event.target),
+            timestamp: Date.now(),
+          };
+
+          this.clicks.push(clickData);
+          this.sendEvent("click", clickData);
+        }
+
+        handleScroll() {
+          const scrollDepth =
+            (window.pageYOffset + this.viewportHeight) / this.pageHeight;
+          const scrollData = {
+            depth: scrollDepth,
+            timestamp: Date.now(),
+          };
+
+          this.scrollDepths.push(scrollData);
+          this.sendEvent("scroll", scrollData);
+        }
+
+        handleProductHover(product, isEnter) {
+          const productData = this.getProductData(product);
+          if (isEnter) {
+            product._hoverStart = Date.now();
+            this.sendEvent("product_hover_start", productData);
+          } else if (product._hoverStart) {
+            const duration = Date.now() - product._hoverStart;
+            this.sendEvent("product_hover_end", {
+              ...productData,
+              duration,
+            });
+            delete product._hoverStart;
+          }
+        }
+
+        handlePageExit() {
+          this.sendEvent("page_exit", {
+            timeSpent: Date.now() - this.sessionStart,
+            movements: this.movements.length,
+            clicks: this.clicks.length,
+          });
+        }
+
+        getElementData(element) {
+          return {
+            tag: element.tagName.toLowerCase(),
+            id: element.id,
+            classes: Array.from(element.classList),
+            text: element.textContent?.trim().slice(0, 100),
+            href: element.href,
+            type: element.type,
+          };
+        }
+
+        getProductData(element) {
+          const product = element.closest(".product");
+          if (!product) return null;
+
+          return {
+            id: product.id,
+            title: product.querySelector("h3")?.textContent,
+            price: product.querySelector(".price")?.textContent,
+          };
+        }
+
+        detectProducts() {
+          const products = document.querySelectorAll(".product");
+          products.forEach((product) => {
+            if (!product.id) {
+              product.id = "product-" + this.generateId();
+            }
+          });
+        }
+
+        sendEvent(eventType, data) {
+          const event = {
+            sessionId: this.sessionId,
+            eventType,
+            url: window.location.href,
+            timestamp: Date.now(),
+            data,
+          };
+
+          // Debug output
+          const debugContent = document.getElementById("debug-content");
+          const eventEntry = document.createElement("div");
+          eventEntry.style.borderBottom = "1px solid #555";
+          eventEntry.style.marginBottom = "5px";
+          eventEntry.style.paddingBottom = "5px";
+          eventEntry.innerHTML = `
+                    <strong>${eventType}</strong><br>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+          debugContent.insertBefore(eventEntry, debugContent.firstChild);
+
+          // Keep only last 10 events
+          if (debugContent.children.length > 10) {
+            debugContent.removeChild(debugContent.lastChild);
+          }
+
+          // Log to console
+          console.log("Analytics Event:", event);
+
+          // Send to server if available
+          if (typeof fetch !== "undefined") {
+            try {
+              fetch("http://localhost:3000/collect", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(event),
+              }).catch((err) => console.log("Server error:", err));
+            } catch (error) {
+              console.error("Failed to send event:", error);
+            }
+          }
+        }
+      }
+
+      // Initialize tracker
+      window.addEventListener("DOMContentLoaded", () => {
+        window.tracker = new BehaviorTracker();
+      });
+    </script>
+  </body>
+</html>

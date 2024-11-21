@@ -1,0 +1,59 @@
+# Quick Start Guide - Analytics System
+
+## Starting the Server
+
+1. Make sure MongoDB is running locally
+2. Start the server:
+
+```bash
+node server.js
+```
+
+## Testing the System
+
+1. Access the test page:
+
+   - Open http://localhost:3000/test in your browser
+
+2. Verify tracking is working:
+   - Open browser's Developer Tools (F12 or right-click > Inspect)
+   - Check the Console tab - you should see:
+     ```
+     "Analytics tracker initialized successfully"
+     ```
+   - Check the Network tab to see tracking requests:
+     - Look for POST requests to `/analytics` endpoint
+     - You should see requests for:
+       - Page views
+       - Click events
+       - Scroll events
+       - Heartbeat signals
+
+## Troubleshooting
+
+If you don't see the expected results:
+
+1. Make sure MongoDB is running
+2. Verify the server started without errors
+3. Check browser console for any error messages
+4. Ensure all files are in the correct locations:
+   ```
+   website-analytics/
+   ├── public/
+   │   ├── tracker.js
+   │   └── test.html
+   └── server.js
+   ```
+
+## Need Help?
+
+1. Check if MongoDB is running:
+
+```bash
+mongosh
+```
+
+2. Verify server logs for any errors
+3. Check browser console for detailed error messages
+
+That's it! Your analytics system should now be collecting data from the test page.
